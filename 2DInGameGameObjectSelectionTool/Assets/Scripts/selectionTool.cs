@@ -33,15 +33,28 @@ public class selectionTool : MonoBehaviour {
 
         Vector3 screenMousePos;
         Vector3 worldMousePos;
+        screenMousePos = Input.mousePosition;
+        //screenMousePos.z = transform.position.z - Camera.main.transform.position.z; Commented this out, not sure why you need to define a z coordinate
+        /*
+         * 
+         * If I'm not mistaken you want to get the vector from the game manager position to the camera, this isn't how it works
+         * to make things easier you should put any scripts that rely on the camera, on the camera. 
+         *
+         * That way you can define the z coordinate as the z coordinate of the camera, as it should be.
+         * 
+         * Like so...
+         */
+        screenMousePos.z = transform.position.z;
+        worldMousePos = Camera.main.ScreenToWorldPoint(screenMousePos);
 
         if (Input.GetMouseButtonDown(0)) //QUICK ACTION
         {
             Debug.Log("Down");
 
             //get the Position Of Our Mouse
-            screenMousePos = Input.mousePosition;
-            screenMousePos.z = transform.position.z - Camera.main.transform.position.z;
-            worldMousePos = Camera.main.ScreenToWorldPoint(screenMousePos);
+            //screenMousePos = Input.mousePosition;
+           // screenMousePos.z = transform.position.z - Camera.main.transform.position.z; Grabbing this snippet of code and moving out of the if statement
+            //worldMousePos = Camera.main.ScreenToWorldPoint(screenMousePos);
 
             //save our Initial Position in Case We Are Using the Rect or Lasso Tool
             initialScreenMousePos = screenMousePos;
@@ -49,6 +62,7 @@ public class selectionTool : MonoBehaviour {
 
             //raycast to try to find a gameobject in front of us
             RaycastHit2D hit = Physics2D.Raycast(new Vector2(worldMousePos.x, worldMousePos.y), Vector3.forward);
+            
 
             if (hit.collider != null) //we are over a gameobject...
             {
@@ -112,9 +126,9 @@ public class selectionTool : MonoBehaviour {
         else //LONG ACTION
         {
             //get the Position Of Our Mouse
-            screenMousePos = Input.mousePosition;
-            screenMousePos.z = transform.position.z - Camera.main.transform.position.z;
-            worldMousePos = Camera.main.ScreenToWorldPoint(screenMousePos);
+            //screenMousePos = Input.mousePosition;
+            // screenMousePos.z = transform.position.z - Camera.main.transform.position.z; Grabbing this snippet of code and moving out of the if statement
+            //worldMousePos = Camera.main.ScreenToWorldPoint(screenMousePos);
 
             finalScreenMousePos = screenMousePos;
             finalWorldMousePos = worldMousePos;
@@ -136,7 +150,7 @@ public class selectionTool : MonoBehaviour {
                 if (rectTool == true)
                 {
                     Debug.Log("Rect Tool CLOSE");
-
+                    /*
                     //code
                     //NOTE: the rectangle is built from the top left corner (topLeftCorner Coords, size.x, size.y)
                     Vector3 init = initialScreenMousePos;
@@ -157,6 +171,24 @@ public class selectionTool : MonoBehaviour {
                     Collider2D[] inRect = Physics2D.OverlapBoxAll(new Vector2(centerPoint.x,centerPoint.y),new Vector2(halfWidth,halfHeight),0);
 
                     Debug.Log("----------Collisions:" + inRect.Length);
+                    */
+
+                    //Using OverlapArea
+                    Collider2D[] inRect = Physics2D.OverlapAreaAll(initialWorldMousePos, finalWorldMousePos);
+                    Debug.Log("----------Collisions:" + inRect.Length);
+
+                    //Highlight selected game objects
+
+                    foreach(Collider2D inSelection in inRect)
+                    {
+                        //check if object is highlighted
+                        if(!selectedObjects.Contains(inSelection))
+                        {
+                            Debug.Log("Object Being Selected");
+                            selectedObjects.Add(inSelection.gameObject);
+                            inSelection.gameObject.GetComponent<SpriteOutline>().ActivateOutline();
+                        }
+                    }
 
                     rectTool = false;
                 }
