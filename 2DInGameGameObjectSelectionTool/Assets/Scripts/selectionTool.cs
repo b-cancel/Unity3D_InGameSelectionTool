@@ -3,11 +3,49 @@ using System.Collections.Generic;
 using UnityEngine;
 using System;
 
+/*
+ * Author: Bryan Cancel
+ * Status: Testing
+ * BUG: with Lasso Tool
+*/ 
+
 public class selectionTool : MonoBehaviour {
 
-    //NOTE: This Selection Tool Selects work EXCLUSIVELY with:
-    //1. LEFT CLICKS
-    //2. LEFT CTRL KEY (as modifier)
+    /*
+     * For this to WORK at ALL -> attach this Spript to an Empty gameObject at root of gameobjects in Hierarchy Window
+     */
+
+    /*
+    * NOTE: This Selection Tool works EXCLUSIVELY with:
+    * 1. LEFT CLICKS
+    * 2. LEFT CTRL KEY (as modifier)
+    * 3. LEFT ALT KEY (as modifier)
+    * 
+    * IF on GameObject (will Select IF deselected AND Deselect IF selected)
+    *   click -> to (select OR deselect) 1 object
+    *   ctrl + click -> to (add OR remove) objects to your list of selections
+    * ELSE (will allways select)
+    *   alt + click + drag -> Rectangular Selection Tool
+    *   ctrl + click + drag -> Lasso Selection Tool
+    */
+
+    /*
+     * NOTE: To Maintain the SelectedObjects Array you Need These things Attached to your GameObjects
+     * For (1) Selection (2) Rectangle Selection Tool -> your gameobjects NEED a Collider2D
+     * For (3) Lasso Tool -> your gameobjects NEED a RigidBody2D (CANT HAVE TYPE Static)
+    */
+
+    /*
+     * NOTE: To Keep the Graphical Effects you NEED to have...
+     ***For 2D Sprite Outline on a GameObject http://nielson.io/2016/04/2d-sprite-outlines-in-unity/
+     * (1) in Sprite Render Component
+     *      (a) have sprite
+     *      (b) have "SpriteOutline" Material
+     * (2) "SpriteOutline" Script
+     * (3) "SpriteOutline" Shader
+     ***For Visual Dispaly of Lasso
+     * (1) cameraManager Script Attched to the Main Camera
+    */
 
     ArrayList selectedObjects; //this will store all of our selected object
 
@@ -21,7 +59,11 @@ public class selectionTool : MonoBehaviour {
     //these indicate which tool is being used when you are clicking the button
     public bool rectTool;
     public bool lassoTool;
-    public ArrayList ourPoints;
+    public ArrayList ourPoints; //keep track of ourpoints when using the lasso tool
+
+    //the two variables we use to not save points with the lasso tool every single frame (rather we save the point every couple of seconds)
+    private float nextActionTime;
+    public float period;
 
     // Use this for initialization
     void Start () {
@@ -29,24 +71,18 @@ public class selectionTool : MonoBehaviour {
         rectTool = false;
         lassoTool = false;
         ourPoints = new ArrayList();
+        nextActionTime = 0.0f;
+        period = 0.1f;
     }
-
-    //the two variables we use to not save points with the lasso tool every single frame (rather we save the point every couple of seconds)
-    private float nextActionTime = 0.0f;
-    public float period = 0.1f;
 
     // Update is called once per frame
     void Update () {
-
-        //--- Taking Care of what happens when we click on our mouse
 
         Vector3 screenMousePos;
         Vector3 worldMousePos;
 
         if (Input.GetMouseButtonDown(0)) //QUICK ACTION
         {
-            Debug.Log("Down");
-
             //get the Position Of Our Mouse
             screenMousePos = Input.mousePosition;
             screenMousePos.z = transform.position.z - Camera.main.transform.position.z;
@@ -61,9 +97,6 @@ public class selectionTool : MonoBehaviour {
 
             if (hit.collider != null) //we are over a gameobject...
             {
-
-                Debug.Log("Over a GO");
-
                 //the gameObject we have selected
                 GameObject newGO = hit.collider.gameObject;
 
@@ -112,9 +145,7 @@ public class selectionTool : MonoBehaviour {
                 }
                 else
                 {
-                    Debug.Log(selectedObjects.Count);
                     deselectAll();
-                    Debug.Log(selectedObjects.Count);
                 }
             }
         }
@@ -130,12 +161,8 @@ public class selectionTool : MonoBehaviour {
 
             if (Input.GetMouseButton(0)) //Update the Lasso and Rectangle Tool
             {
-                Debug.Log("Pressed");
-
                 if (lassoTool == true)
                 {
-                    Debug.Log("Lasso Tool");
-
                     //add this particular point every couple nextUpdate time
                     if (Time.time > nextActionTime)
                     {
@@ -147,12 +174,8 @@ public class selectionTool : MonoBehaviour {
             }
             else if (Input.GetMouseButtonUp(0)) //OutPut Results of Lasso and Rectangle Tool
             {
-                Debug.Log("UP");
-
                 if (rectTool == true)
                 {
-                    Debug.Log("Rect Tool CLOSE");
-
                     //NOTE: the rectangle is built from the top left corner (topLeftCorner Coords, size.x, size.y)
                     Vector3 init = initialScreenMousePos;
                     Vector3 final = finalScreenMousePos;
@@ -171,7 +194,6 @@ public class selectionTool : MonoBehaviour {
 
                     //Using OverlapArea
                     Collider2D[] inRect = Physics2D.OverlapAreaAll(initialWorldMousePos, finalWorldMousePos);
-                    Debug.Log("----------Collisions:" + inRect.Length);
 
                     //select all dogs in Rectangle Area
                     selectAll(inRect);
@@ -180,11 +202,9 @@ public class selectionTool : MonoBehaviour {
                 }
                 else if (lassoTool == true)
                 {
-                    Debug.Log("Lasso Tool CLOSE");
-
                     //create polygonal collider
                     this.gameObject.AddComponent<PolygonCollider2D>();
-                    Vector2[] v2Arr = Array.ConvertAll(ourPoints.ToArray(), item => (Vector2)item); //TODO this casting isnt working... -_-
+                    Vector2[] v2Arr = objArrayToVector2Array(ourPoints.ToArray()); //TODO this casting isnt working... -_-
                     GetComponent<PolygonCollider2D>().SetPath(0, v2Arr);
                     GetComponent<PolygonCollider2D>().isTrigger = true;
 
@@ -196,6 +216,31 @@ public class selectionTool : MonoBehaviour {
                 }
             }
         } 
+    }
+
+    //---custom casting Functions
+
+    Vector2[] objArrayToVector2Array(System.Object[] arr) //the array MUST be a bunch of Vector 2 objects
+    {
+        Vector2[] newArr = new Vector2[arr.Length];
+
+        for (int i = 0; i < arr.Length; i++)
+        {
+            Vector3 temp = (Vector3)arr[i];
+            newArr[i] = new Vector2(temp.x, temp.y);
+        }
+
+        return newArr;
+    }
+
+    Collider2D[] objArrayToCollider2DArray(System.Object[] arr)
+    {
+        Collider2D[] newArr = new Collider2D[arr.Length];
+
+        for (int i = 0; i < arr.Length; i++)
+            newArr[i] = (Collider2D)arr[i];
+
+        return newArr;
     }
 
     //---helper Functions for Update Function
@@ -223,12 +268,7 @@ public class selectionTool : MonoBehaviour {
         selectedObjects.Clear();
     }
 
-    void selectAll(ArrayList colliders)
-    {
-        selectAll(Array.ConvertAll(colliders.ToArray(), item => (Collider2D)item)); //TODO this casting isnt working... -_-
-    }
-
-    void selectAll(Collider2D[] colliders)
+    void selectAll(Collider2D[] colliders) //Rectangular and Lasso Tool helper
     {
         foreach (Collider2D col in colliders)
         {
@@ -240,13 +280,14 @@ public class selectionTool : MonoBehaviour {
     //---These are needed for our polygon collider to do its job after the Lasso Tool Has been Let Go
 
     /*
+     * Strange but Functional "Hack" for Lasso Tool
      * 1. Update Function create the 2dpolygoncollider/trigger on the indicated points
      * 2. fixed update runs
      * 3. onTriggerEnter runs (hopefully as many times as the collisions in it)
      * 4. fixed Update runs.... handle all the collisions found and select them... now the collider isnt needed so its deleted
      */
     int runCounter = 0; //if 0 nothing happens... if 1 we have created the collider but Not yet saved collisions... if 2 we must select collisions and delete collider
-    ArrayList collider2DArr; //keeps track of all the collisions found in or touching our polygon collider
+    ArrayList collider2DArr = new ArrayList(); //keeps track of all the collisions found in or touching our polygon collider
 
     void FixedUpdate()
     {
@@ -255,20 +296,24 @@ public class selectionTool : MonoBehaviour {
             if (runCounter == 2)
             {
                 //select Collisions in Lasso
-                selectAll(collider2DArr);
+                Collider2D[] temp = objArrayToCollider2DArray(collider2DArr.ToArray());
+                selectAll(temp);
 
                 //delete the polygon Collider
                 Destroy(GetComponent<PolygonCollider2D>());
 
                 runCounter = 0; //we are back at our regular state
             }
-            //ELSE we need to wait for onTriggerEnter to run and add our Collisions to the Collider2D list
+            else //ELSE we need to wait for onTriggerEnter to run and add our Collisions to the Collider2D list
+            {
+                runCounter++; //go from 1 to 2
+            }  
         }
     }
-    
-    void OnTriggerEnter2D(Collider2D other)
+
+    //NOTE: There are some order assumptions being made... it might work now like this because there are few objects
+    void OnTriggerEnter2D(Collider2D other) //ORDER: Fixed Update Run (n) -> OnTriggerEnter Run (for as many objects as are colliding with our polygon collider) -> Fixed Udpate Run (n+1)
     {
-        Debug.Log("Thing in Lasso");
         collider2DArr.Add(other);
     }
 
