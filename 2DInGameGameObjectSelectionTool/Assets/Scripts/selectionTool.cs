@@ -5,8 +5,7 @@ using System;
 
 /*
  * Author: Bryan Cancel
- * Status: Testing
- * BUG: with Lasso Tool
+ * Status: Working but NOT optimized
 */ 
 
 public class selectionTool : MonoBehaviour {
@@ -47,10 +46,14 @@ public class selectionTool : MonoBehaviour {
      * (1) cameraManager Script Attched to the Main Camera
     */
 
+    //NOTE: this implementation of the lasso tool has SIGNIFICANT limitations... but For my purposes (Selecting 100 objects or less) its works well
+    
+    //NOTE: you can chosse to REQUIRE all objects that are selected to be of the same type by modifying the canSelectDifTypes boolean
+
     ArrayList selectedObjects; //this will store all of our selected object
 
     //used to create the Rectangle every Frame with onGUI
-    //used to finish the Lasso Selection if it isnt done on its own
+    //used to finish the Lasso Selection
     Vector3 initialScreenMousePos;
     Vector3 initialWorldMousePos;
     Vector3 finalScreenMousePos;
@@ -60,6 +63,9 @@ public class selectionTool : MonoBehaviour {
     public bool rectTool;
     public bool lassoTool;
     public ArrayList ourPoints; //keep track of ourpoints when using the lasso tool
+
+    //determines if you CAN or CAN't select object of different Types
+    public bool canSelectDifTypes;
 
     //the two variables we use to not save points with the lasso tool every single frame (rather we save the point every couple of seconds)
     private float nextActionTime;
@@ -73,6 +79,8 @@ public class selectionTool : MonoBehaviour {
         ourPoints = new ArrayList();
         nextActionTime = 0.0f;
         period = 0.1f;
+
+        canSelectDifTypes = false;
     }
 
     // Update is called once per frame
@@ -113,15 +121,18 @@ public class selectionTool : MonoBehaviour {
                             //NOTE: we want to maintain a selectedList of objects of the same type
                             GameObject old = (GameObject)selectedObjects[0];
 
-                            //NOTE: I defined type by name(works well with programatically cloned objects)... feel free to define type by label or layer... etc...
-                            //if we have selected a different TYPE of game object then delete all the previous objects in the list
-                            if (old.tag != newGO.tag)
+                            if (!canSelectDifTypes)
                             {
-                                ///TODO MAYBE... ask user whether they (REQUIRES SIGNIFICANT REWRITING OF CODE)
-                                //1. Want to Select THIS... and DE select OTHERS
-                                //2. or Keep OTHERS
-                                deselectAll();
+                                //NOTE: I defined type by TAG... feel free to define type by label or layer... etc...
+                                //if we have selected a different TYPE of game object then delete all the previous objects in the list
+                                if (old.tag != newGO.tag)
+                                {
+                                    //TODO LET THE USER KNOW WHY THE SELECTION WASNT MADE
+
+                                    deselectAll();
+                                }
                             }
+                            //ELSE we can select different types...
                         }
                     }
                     //ELSE this is our first selection
@@ -204,11 +215,11 @@ public class selectionTool : MonoBehaviour {
                 {
                     //create polygonal collider
                     this.gameObject.AddComponent<PolygonCollider2D>();
-                    Vector2[] v2Arr = objArrayToVector2Array(ourPoints.ToArray()); //TODO this casting isnt working... -_-
+                    Vector2[] v2Arr = objArrayToVector2Array(ourPoints.ToArray());
                     GetComponent<PolygonCollider2D>().SetPath(0, v2Arr);
                     GetComponent<PolygonCollider2D>().isTrigger = true;
 
-                    runCounter = 1; //indicate this to our fixedUpdate
+                    polyColliderExist = true; //indicate this to our fixedUpdate
 
                     ourPoints.Clear();
 
@@ -270,10 +281,65 @@ public class selectionTool : MonoBehaviour {
 
     void selectAll(Collider2D[] colliders) //Rectangular and Lasso Tool helper
     {
-        foreach (Collider2D col in colliders)
+        if (colliders.Length != 0)
         {
-            (col.gameObject).GetComponent<SpriteOutline>().ActivateOutline();
-            selectedObjects.Add(col.gameObject);
+            bool addingSameType = true;
+
+            if (!canSelectDifTypes)
+            {
+                //if (we already have previously selected objects) we MUST make sure the objects we are adding...
+                //are of the same type as the objects already selected FIRST
+                if (selectedObjects.Count != 0)
+                {
+                    foreach (Collider2D col in colliders)
+                    {
+                        if (((GameObject)selectedObjects[0]).tag != col.gameObject.tag)
+                        {
+                            addingSameType = false;
+                            break;
+                        }
+                    }
+
+                    //if adding sameType is FALSE here we know that selectedObject AND colliders are all NOT of the same type
+                    if (!addingSameType)
+                        deselectAll();
+
+                    //BUT all the colliders might still be of the same type
+                }
+
+                //make sure all the colliders in our current selection are of the same type
+                GameObject firstObj = colliders[0].gameObject;
+                foreach (Collider2D col in colliders)
+                {
+                    if (firstObj.tag != col.gameObject.tag)
+                    {
+                        addingSameType = false;
+                        break;
+                    }
+                }
+            }
+            //ELSE we can select different types so just select the object
+
+            //now we know what we need to know to select or not select the objects
+            if (addingSameType)
+            {
+                foreach (Collider2D col in colliders)
+                {
+                    GameObject newGameObj = col.gameObject;
+                    if (selectedObjects.Contains(newGameObj) == false)
+                    {
+                        newGameObj.GetComponent<SpriteOutline>().ActivateOutline();
+                        selectedObjects.Add(newGameObj);
+                    }
+                    //ELSE we already selected this object
+                }
+            }
+            else
+            {
+                //TODO LET THE USER KNOW WHY THE SELECTION WASNT MADE
+            }
+
+            collider2DArr.Clear();
         }
     }
 
@@ -281,19 +347,40 @@ public class selectionTool : MonoBehaviour {
 
     /*
      * Strange but Functional "Hack" for Lasso Tool
-     * 1. Update Function create the 2dpolygoncollider/trigger on the indicated points
-     * 2. fixed update runs
-     * 3. onTriggerEnter runs (hopefully as many times as the collisions in it)
-     * 4. fixed Update runs.... handle all the collisions found and select them... now the collider isnt needed so its deleted
+     * 1. Update Function creates the 2dpolygoncollider/trigger on the indicated points
+     * 
+     * 2. fixed update detects that a polycollider exist
+     * 3. it changes polycollider to false
+     * 4. IF a collision is detected ontrigger enter will run, adding that gameobject to a list
+     * 5. it then changes the polycollider to true
+     * 
+     * REPEAT 2->5 for as many objects as needed
+     * 
+     * 6. Finally when fixedupdate detects that polycollider doesn't exist
+     * 7. it selects all objects within the area
+     * 8. it deletes the polygon collider
+     * 
+     * 9. (REPEAT UNTIL LASSO USED AGAIN) the fixedupdate will detect that a polycollider DOESN'T exist, then realize it has no polycollider to delete and continue
      */
-    int runCounter = 0; //if 0 nothing happens... if 1 we have created the collider but Not yet saved collisions... if 2 we must select collisions and delete collider
+
+    //NOTE: because of the step taken above... if you are select many objects there might be a significant lag time...
+    //EX: if fixedupdate runs 60 times per second, and you have found 600 objects inside of your lasso...
+    //it will take 600 runs of fixed update to register all the updates or 600/60 = 10 seconds
+
+    bool polyColliderExist = false; //this variable is used in a very strange way described above
     ArrayList collider2DArr = new ArrayList(); //keeps track of all the collisions found in or touching our polygon collider
 
     void FixedUpdate()
     {
-        if (runCounter != 0)
+        if (polyColliderExist)
         {
-            if (runCounter == 2)
+            polyColliderExist = false;
+        }
+        else
+        {
+            //our polygon collider should be deleted because onTriggerEnter Wasn't called last time since If it had been we would have entered the if statement
+
+            if (GetComponent<PolygonCollider2D>() != null)
             {
                 //select Collisions in Lasso
                 Collider2D[] temp = objArrayToCollider2DArray(collider2DArr.ToArray());
@@ -301,20 +388,15 @@ public class selectionTool : MonoBehaviour {
 
                 //delete the polygon Collider
                 Destroy(GetComponent<PolygonCollider2D>());
-
-                runCounter = 0; //we are back at our regular state
             }
-            else //ELSE we need to wait for onTriggerEnter to run and add our Collisions to the Collider2D list
-            {
-                runCounter++; //go from 1 to 2
-            }  
+            //ELSE its just a regular iteration of FixedUpdate
         }
     }
 
-    //NOTE: There are some order assumptions being made... it might work now like this because there are few objects
-    void OnTriggerEnter2D(Collider2D other) //ORDER: Fixed Update Run (n) -> OnTriggerEnter Run (for as many objects as are colliding with our polygon collider) -> Fixed Udpate Run (n+1)
+    void OnTriggerEnter2D(Collider2D other)
     {
         collider2DArr.Add(other);
+        polyColliderExist = true;
     }
 
     //---OnGUI is used to draw the visible Rectangle When using the Rect Selection Tool

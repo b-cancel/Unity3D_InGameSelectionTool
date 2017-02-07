@@ -524,6 +524,20 @@ Prefab:
       propertyPath: m_Name
       value: testSprite (1)
       objectReference: {fileID: 0}
+    - target: {fileID: 114510185745563072, guid: 402575355fa617b4f805a7b579fe2068,
+        type: 2}
+      propertyPath: color.r
+      value: 0.07586192
+      objectReference: {fileID: 0}
+    - target: {fileID: 114510185745563072, guid: 402575355fa617b4f805a7b579fe2068,
+        type: 2}
+      propertyPath: color.b
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1180173350289616, guid: 402575355fa617b4f805a7b579fe2068, type: 2}
+      propertyPath: m_TagString
+      value: Untagged
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_ParentPrefab: {fileID: 100100000, guid: 402575355fa617b4f805a7b579fe2068, type: 2}
   m_IsPrefabParent: 0
@@ -813,6 +827,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   rectTool: 0
   lassoTool: 0
+  canSelectDifTypes: 0
   period: 0.1
 --- !u!4 &1586779794
 Transform:
@@ -952,6 +967,31 @@ Prefab:
     - target: {fileID: 58701172439653094, guid: 402575355fa617b4f805a7b579fe2068,
         type: 2}
       propertyPath: m_IsTrigger
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 212868536804660736, guid: 402575355fa617b4f805a7b579fe2068,
+        type: 2}
+      propertyPath: m_Color.r
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 212868536804660736, guid: 402575355fa617b4f805a7b579fe2068,
+        type: 2}
+      propertyPath: m_Color.g
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 212868536804660736, guid: 402575355fa617b4f805a7b579fe2068,
+        type: 2}
+      propertyPath: m_Color.b
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 114510185745563072, guid: 402575355fa617b4f805a7b579fe2068,
+        type: 2}
+      propertyPath: color.r
+      value: 0.2827587
+      objectReference: {fileID: 0}
+    - target: {fileID: 114510185745563072, guid: 402575355fa617b4f805a7b579fe2068,
+        type: 2}
+      propertyPath: color.b
       value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
