@@ -6,6 +6,8 @@
   <img src="https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif" alt="PayPal Donate Button">
 </a>
 <h4> </h4>
+<h4>NOTE: this assets has yet to be refined or fully implemented, but for now hopefully it provides a foundation for others trying to build something similar</h4>
+<br>
 Includes: 
 <ul>
   <li>Well Commented Code</li>
