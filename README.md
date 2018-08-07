@@ -1,4 +1,4 @@
-Unity In Game GameObject Selection Tool for 2D 
+# Unity In Game GameObject Selection Tool for 2D 
 
 <h5>If this project helped you reduce developement time or you just want to help me continue making useful tools</h5>
 <h5>Feel free to buy me a cup of coffee! :)</h5>
@@ -7,8 +7,10 @@ Unity In Game GameObject Selection Tool for 2D
 </a>
 
 Includes: 
-(0) Well Commented Code
-(1) Individual Object Selection 
-(2) Rectangular Selection Tool 
-(3) Lasso Selection Tool 
-(4) Require Selected Group to be of the same Type... or don't
+<ul>
+  <li>Well Commented Code</li>
+  <li>Individual Object Selection</li> 
+  <li>Rectangular Selection Tool</li>
+  <li>Lasso Selection Tool</li>
+  <li>Require Selected Group to be of the same Type... or don't</li>
+</ul>
