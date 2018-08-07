@@ -20,7 +20,7 @@ Future Additions:
 <ul>
   <li>entire tool toggle option</li>
   <li>tool only affects certain gameobject layers, or tags, or names[expand]</li>
-  <li>single and multiple object selection and de selection</li>
+  <li>single and multiple object selection and de selection[expand]</li>
   <li>Lasso and Polygonal Selection Tool in 1</li>
   <li>Invert Selection Option</li>
 </ul>
